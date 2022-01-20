@@ -9,7 +9,6 @@ if (!fs.existsSync(dir)){
 }
 
 const options = {
-    headless: true,
     ignoreHTTPSErrors: true,
     userDataDir: dir,
     headless: false,
@@ -26,8 +25,8 @@ const options = {
     const [page] = await browser.pages();
     // await page.evaluateOnNewDocument(preloadFile);
     await page.goto('https://yggtorrent.re/');
-    await delay(3000);
+    await page.waitForTimeout(2000)
     await page.goto('https://www3.yggtorrent.re/engine/search?name=&do=search');
-    await delay(60000);
+    await page.waitForTimeout(60000)
     await browser.close();
 })();
