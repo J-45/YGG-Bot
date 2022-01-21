@@ -30,15 +30,16 @@ const options = {
         return document.documentElement.innerHTML;
     });
     console.log('Torrents data:', html.length);
-    const regexp = /<tr>(?:[^>]+>){3}<a href="https:\/\/\w+.yggtorrent(?:[^=]+=){7}"([^"]+)(?:[^>]+>){19}([^<]+)<\/td>\s+<td>(\d+)<\/td>\s+<td>(\d+)<\/td>\s+<td>(\d+)<\/td>\s+<\/tr>/gm;
+    const regexp = /<tr>(?:[^>]+>){3}<a href="https:\/\/\w+.yggtorrent(?:[^=]+=){7}"([^"]+)(?:[^>]+>){14}(\d+)(?:[^>]+>){5}([^<]+)<\/td>\s+<td>(\d+)<\/td>\s+<td>(\d+)<\/td>\s+<td>(\d+)<\/td>/gm;
     const result = [...html.matchAll(regexp)];
     result.forEach(element => {
         url = element[1];
-        size = element[2];
-        download = element[3];
-        seeds = element[3];
-        peers = element[3];
-        console.log(`url: ${url}\nsize: ${size}\ndownload: ${download}\nseeds: ${seeds}\npeers: ${peers}\n`);
+        time = element[2];
+        size = element[3];
+        download = element[4];
+        seeds = element[5];
+        peers = element[6];
+        console.log(`url: ${url}\ntime: ${time}\nsize: ${size}\ndownload: ${download}\nseeds: ${seeds}\npeers: ${peers}\n`);
     });
     
     await browser.close();
