@@ -23,13 +23,13 @@ if (!fs.existsSync(torrents_dir)){
 }
 
 const options = {
-    args: [`--window-size=${1100},${1080}`],
-    ignoreHTTPSErrors: true,
+    // args: [`--window-size=${1100},${1080}`],
+    ignoreHTTPSErrors: false,
     userDataDir: user_data,
-    headless: false,
-    defaultViewport: {
-        width: 1100, height: 1080
-    }
+    headless: true,
+    // defaultViewport: {
+    //     width: 1100, height: 1080
+    // }
 };
 
 (async () => {
@@ -61,6 +61,7 @@ const options = {
     while (true) {
         
         try {
+
             await page.goto('https://www3.yggtorrent.re/engine/search?do=search', {waitUntil: 'load', timeout: 0});
             await page.waitForSelector('div.table-responsive:nth-child(2)');
 
@@ -80,9 +81,9 @@ const options = {
                 torrent_download = "https://www3.yggtorrent.re/engine/download_torrent?id="+id;
                 torrent_page = "https://www3.yggtorrent.re/torrent/-/-/"+id+"--";
                 // local_torrent = `./torrents/${id}.torrent`;
-                if (download < 1 && seeds < 2 && peers < 2 && size.includes("Go")){
+                if (download == 0 && seeds < 2 && peers == 0 && size.includes("Go")){
                     size = parseInt(size.split('Go')[0]);
-                    if (size > 1 && size < 10) {
+                    if (size >= 10 && size <= 50) {
                         // console.log(`url: ${url}\nid: ${id}\ntime: ${time}\nsize: ${size}\ndownload: ${download}\nseeds: ${seeds}\npeers: ${peers}\n`);
 
                         await page.goto(torrent_page, {waitUntil: 'load', timeout: 0});
