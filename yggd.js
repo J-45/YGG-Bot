@@ -54,10 +54,6 @@ const options = {
         // handle initialization error
     }
 
-    // proc.exec('aria2c -v', function callback(error, stdout, stderr) {
-    //     console.log(stdout);
-    // });
-
     while (true) {
         
         try {
