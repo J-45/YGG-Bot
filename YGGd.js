@@ -9,8 +9,8 @@ const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 
 puppeteer.use(StealthPlugin());
 
-let ygg_user = "";
-let ygg_pass = "";
+let ygg_user = "ether123";
+let ygg_pass = "Ygg3***";
 
 var user_data = "./user_data";
 if (!fs.existsSync(user_data)){
@@ -26,7 +26,7 @@ const options = {
     // args: [`--window-size=${1100},${1080}`],
     ignoreHTTPSErrors: false,
     userDataDir: user_data,
-    headless: true,
+    headless: false,
     // defaultViewport: {
     //     width: 1100, height: 1080
     // }
@@ -41,24 +41,32 @@ const options = {
 
     await page._client.send('Page.setDownloadBehavior', {behavior: 'allow', downloadPath: torrents_dir});
     await page.goto('https://www3.yggtorrent.re/');
-
-    try {
-        await page.waitForSelector('a#register');
-        await page.click('a#register');
-        await page.waitForSelector('button > i.ico_unlock');
-        await page.type('input[name=id]', ygg_user);
-        await page.type('input[name=pass]', ygg_pass);
-        await page.click('button > i.ico_unlock');
-    }
-    catch(e) {
-        // handle initialization error
-    }
+    var startTime = 0;
 
     while (true) {
         
         try {
+            let endTime = new Date();
+            let timeDiff = (endTime - startTime) / 1000;
 
-            await page.goto('https://www3.yggtorrent.re/engine/search?do=search', {waitUntil: 'load', timeout: 0});
+            if (timeDiff > 60*15) {
+                startTime = new Date();
+
+                try {
+                    await page.waitForSelector('a#register');
+                    await page.click('a#register');
+                    await page.waitForSelector('button > i.ico_unlock');
+                    await page.type('input[name=id]', ygg_user);
+                    await page.type('input[name=pass]', ygg_pass);
+                    await page.click('button > i.ico_unlock');
+                }
+                catch(e) {
+                    // handle initialization error
+                }
+
+            }
+
+            await page.goto('https://www3.yggtorrent.re/engine/search?name=&description=&file=&uploader=&category=2145&sub_category=all&do=search', {waitUntil: 'load', timeout: 0});
             await page.waitForSelector('div.table-responsive:nth-child(2)');
 
             const html = await page.evaluate(() => {
@@ -77,9 +85,9 @@ const options = {
                 torrent_download = "https://www3.yggtorrent.re/engine/download_torrent?id="+id;
                 torrent_page = "https://www3.yggtorrent.re/torrent/-/-/"+id+"--";
                 // local_torrent = `./torrents/${id}.torrent`;
-                if (download == 0 && seeds < 2 && peers == 0 && size.includes("Go")){
+                if (download == 0 && seeds < 2 && peers <= 3 && size.includes("Go")){
                     size = parseInt(size.split('Go')[0]);
-                    if (size >= 10 && size <= 50) {
+                    if (size >= 3 && size <= 7) {
                         // console.log(`url: ${url}\nid: ${id}\ntime: ${time}\nsize: ${size}\ndownload: ${download}\nseeds: ${seeds}\npeers: ${peers}\n`);
 
                         await page.goto(torrent_page, {waitUntil: 'load', timeout: 0});
