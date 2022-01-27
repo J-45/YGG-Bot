@@ -2,6 +2,7 @@ const proc = require('child_process');
 const fs = require('fs');
 const https = require('https');
 const puppeteer = require('puppeteer-extra');
+const prompt = require("prompt-sync")({ sigint: true });
 const StealthPlugin = require('puppeteer-extra-plugin-stealth'); 
 
 // https://github.com/berstend/puppeteer-extra/tree/master/packages/puppeteer-extra-plugin-stealth
@@ -9,10 +10,11 @@ const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 
 puppeteer.use(StealthPlugin());
 
-const prompt = require("prompt-sync")({ sigint: true });
 
-let ygg_user = prompt("Username: ");
-let ygg_pass = prompt("Password: ", {echo: ''});
+
+let ygg_user = prompt("YGG username: ");
+let ygg_pass = prompt("YGG password: ", {echo: ''});
+console.log("\n");
 
 var user_data = "./user_data";
 if (!fs.existsSync(user_data)){
@@ -43,16 +45,12 @@ const options = {
 
     await page._client.send('Page.setDownloadBehavior', {behavior: 'allow', downloadPath: torrents_dir});
     await page.goto('https://www3.yggtorrent.re/');
-    var startTime = 0;
-
     while (true) {
-        
         try {
-            let endTime = new Date();
-            let timeDiff = (endTime - startTime) / 1000;
+            await page.waitForSelector('body > footer',{timeout: 3000});
+            const messageSelector = "div.ct:nth-child(2) > ul:nth-child(1) > li:nth-child(6) > a:nth-child(1)";
 
-            if (timeDiff > 60*15) {
-                startTime = new Date();
+            if (await page.$(messageSelector) == null) {
 
                 try {
                     await page.waitForSelector('a#register');
@@ -63,9 +61,8 @@ const options = {
                     await page.click('button > i.ico_unlock');
                 }
                 catch(e) {
-                    // handle initialization error
+                    console.log("Can not login:" + e);
                 }
-
             }
 
             await page.goto('https://www3.yggtorrent.re/engine/search?name=&description=&file=&uploader=&category=2145&sub_category=all&do=search', {waitUntil: 'load', timeout: 0});
@@ -107,7 +104,7 @@ const options = {
             await page.waitForTimeout(60000);
         }
         catch(e) {
-            // handle initialization error
+            console.log(e);
         }
 
     }
