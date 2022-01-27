@@ -9,8 +9,10 @@ const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 
 puppeteer.use(StealthPlugin());
 
-let ygg_user = "ether123";
-let ygg_pass = "Ygg3***";
+const prompt = require("prompt-sync")({ sigint: true });
+
+let ygg_user = prompt("Username: ");
+let ygg_pass = prompt("Password: ", {echo: ''});
 
 var user_data = "./user_data";
 if (!fs.existsSync(user_data)){
