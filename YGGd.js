@@ -3,6 +3,7 @@ const fs = require('fs');
 const https = require('https');
 const puppeteer = require('puppeteer-extra');
 const prompt = require("prompt-sync")({ sigint: true });
+// puppeteer.use(require('puppeteer-extra-plugin-font-size')({defaultFontSize: 11}))
 const StealthPlugin = require('puppeteer-extra-plugin-stealth'); 
 
 // https://github.com/berstend/puppeteer-extra/tree/master/packages/puppeteer-extra-plugin-stealth
@@ -14,6 +15,9 @@ puppeteer.use(StealthPlugin());
 
 let ygg_user = prompt("YGG username: ");
 let ygg_pass = prompt("YGG password: ", {echo: ''});
+let taille_minimum = 1; // En giga octets
+let taille_maximum = 20; // En Giga octets
+
 console.log("\n");
 
 var user_data = "./user_data";
@@ -27,13 +31,12 @@ if (!fs.existsSync(torrents_dir)){
 }
 
 const options = {
-    // args: [`--window-size=${1100},${1080}`],
+    // args: [`--window-size=${1920},${1080}`],
+    // args: ["--force-device-scale-factor=0.75"],
     ignoreHTTPSErrors: false,
     userDataDir: user_data,
     headless: false,
-    // defaultViewport: {
-    //     width: 1100, height: 1080
-    // }
+    defaultViewport: null,
 };
 
 (async () => {
@@ -44,7 +47,9 @@ const options = {
     await page.setDefaultTimeout(7000);
 
     await page._client.send('Page.setDownloadBehavior', {behavior: 'allow', downloadPath: torrents_dir});
-    await page.goto('https://www3.yggtorrent.re/');
+    await page.goto('https://www3.yggtorrent.re/', {waitUntil: 'load', timeout: 21*1000});
+    await page.addStyleTag({content: 'body {zoom: 0.75;}'})
+
     while (true) {
         try {
             await page.waitForSelector('body > footer',{timeout: 3000});
@@ -65,7 +70,8 @@ const options = {
                 }
             }
 
-            await page.goto('https://www3.yggtorrent.re/engine/search?name=&description=&file=&uploader=&category=2145&sub_category=all&do=search', {waitUntil: 'load', timeout: 0});
+            await page.goto('https://www3.yggtorrent.re/engine/search?name=&description=&file=&uploader=&category=2145&sub_category=2184&option_episode%5B%5D=1&do=search', {waitUntil: 'load', timeout: 21*1000});
+            await page.addStyleTag({content: 'body {zoom: 0.75;}'})
             await page.waitForSelector('div.table-responsive:nth-child(2)');
 
             const html = await page.evaluate(() => {
@@ -86,20 +92,20 @@ const options = {
                 // local_torrent = `./torrents/${id}.torrent`;
                 if (download == 0 && seeds < 2 && peers <= 3 && size.includes("Go")){
                     size = parseInt(size.split('Go')[0]);
-                    if (size >= 3 && size <= 7) {
+                    if (size >= taille_minimum && size <= taille_maximum) {
                         // console.log(`url: ${url}\nid: ${id}\ntime: ${time}\nsize: ${size}\ndownload: ${download}\nseeds: ${seeds}\npeers: ${peers}\n`);
 
-                        await page.goto(torrent_page, {waitUntil: 'load', timeout: 0});
+                        await page.goto(torrent_page, {waitUntil: 'load', timeout: 13*1000});
+                        await page.addStyleTag({content: 'body {zoom: 0.80;}'})
                         await page.waitForSelector('a.butt:nth-child(1)');
                         await page.click('a.butt:nth-child(1)');
-                        await page.waitForTimeout(100);
+                        await page.waitForTimeout(3000);
 
                         // proc.exec('aria2c --save-session=./session/  --dir=./files/ --max-concurrent-downloads=666 --bt-max-open-files=1024 --bt-max-peers=1024 --seed-ratio=0.0 --follow-torrent=mem --torrent-file='+local_torrent, function callback(error, stdout, stderr) {
                         //     console.log(stdout);
                         // });
                     }
                 }
-                await page.waitForTimeout(3000);
             }
             await page.waitForTimeout(60000);
         }
