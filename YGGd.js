@@ -2,7 +2,10 @@ const proc = require('child_process');
 const fs = require('fs');
 const https = require('https');
 const puppeteer = require('puppeteer-extra');
-const prompt = require("prompt-sync")({ sigint: true });
+const prompt = require("prompt-sync")({ 
+    autocomplete: complete(['ether123', 'hello123456']),
+    sigint: true 
+});
 // puppeteer.use(require('puppeteer-extra-plugin-font-size')({defaultFontSize: 11}))
 const StealthPlugin = require('puppeteer-extra-plugin-stealth'); 
 
@@ -10,7 +13,6 @@ const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 // https://www.scrapingbee.com/blog/download-file-puppeteer/
 
 puppeteer.use(StealthPlugin());
-
 
 
 let ygg_user = prompt("YGG username: ");
@@ -24,7 +26,6 @@ var user_data = "./user_data";
 if (!fs.existsSync(user_data)){
     fs.mkdirSync(user_data);
 }
-
 var torrents_dir = "./torrents";
 if (!fs.existsSync(torrents_dir)){
     fs.mkdirSync(torrents_dir);
@@ -117,3 +118,15 @@ const options = {
     await browser.close();
 })
 ();
+
+function complete(commands) {
+    return function (str) {
+      var i;
+      var ret = [];
+      for (i=0; i< commands.length; i++) {
+        if (commands[i].indexOf(str) == 0)
+          ret.push(commands[i]);
+      }
+      return ret;
+    };
+  };
