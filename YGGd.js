@@ -3,24 +3,21 @@ const fs = require('fs');
 const https = require('https');
 const puppeteer = require('puppeteer-extra');
 const prompt = require("prompt-sync")({ 
-    autocomplete: complete(['ether123', 'hello123456']),
+    autocomplete: complete(['bob','kevina']),
     sigint: true 
 });
 // puppeteer.use(require('puppeteer-extra-plugin-font-size')({defaultFontSize: 11}))
 const StealthPlugin = require('puppeteer-extra-plugin-stealth'); 
-
 // https://github.com/berstend/puppeteer-extra/tree/master/packages/puppeteer-extra-plugin-stealth
 // https://www.scrapingbee.com/blog/download-file-puppeteer/
-
 puppeteer.use(StealthPlugin());
-
 
 let ygg_user = prompt("YGG username: ");
 let ygg_pass = prompt("YGG password: ", {echo: ''});
-let taille_minimum = 1; // En giga octets
-let taille_maximum = 20; // En Giga octets
+let taille_minimum = 13; // En giga octets
+let taille_maximum = 42; // En giga octets
 
-console.log("\n");
+console.log("");
 
 var user_data = "./user_data";
 if (!fs.existsSync(user_data)){
@@ -33,29 +30,28 @@ if (!fs.existsSync(torrents_dir)){
 
 const options = {
     // args: [`--window-size=${1920},${1080}`],
-    // args: ["--force-device-scale-factor=0.75"],
     ignoreHTTPSErrors: false,
     userDataDir: user_data,
     headless: false,
     defaultViewport: null,
 };
 
-(async () => {
+async function run () {
     console.log("        -= YGG B0T =-\n");
     console.log("♪┏(・o･)┛♪┗ ( ･o･) ┓♪┏(・o･)┛\n");
     const browser = await puppeteer.launch(options);
     const [page] = await browser.pages();
-    await page.setDefaultTimeout(7000);
-
+    await page.setDefaultTimeout(21*1000);
+    await page.setCacheEnabled(false);
+    await page._client.send('Network.setCacheDisabled', { cacheDisabled: true });
+    
     await page._client.send('Page.setDownloadBehavior', {behavior: 'allow', downloadPath: torrents_dir});
-    await page.goto('https://www3.yggtorrent.re/', {waitUntil: 'load', timeout: 21*1000});
+    await page.goto('https://www3.yggtorrent.re/', {waitUntil: 'networkidle2'});
     await page.addStyleTag({content: 'body {zoom: 0.75;}'})
 
     while (true) {
         try {
-            await page.waitForSelector('body > footer',{timeout: 3000});
-            const messageSelector = "div.ct:nth-child(2) > ul:nth-child(1) > li:nth-child(6) > a:nth-child(1)";
-
+            const messageSelector = ".ico_envelope";
             if (await page.$(messageSelector) == null) {
 
                 try {
@@ -70,11 +66,12 @@ const options = {
                     console.log("Can not login:" + e);
                 }
             }
-
-            await page.goto('https://www3.yggtorrent.re/engine/search?name=&description=&file=&uploader=&category=2145&sub_category=2184&option_episode%5B%5D=1&do=search', {waitUntil: 'load', timeout: 21*1000});
+            let search_url = "https://www3.yggtorrent.re/engine/search?name=&do=search";
+            
+            await page.goto(search_url, {waitUntil: 'networkidle2'});
             await page.addStyleTag({content: 'body {zoom: 0.75;}'})
-            await page.waitForSelector('div.table-responsive:nth-child(2)');
-
+            await page.waitForSelector('body > footer > div > div > center > img');
+            
             const html = await page.evaluate(() => {
                 return document.documentElement.innerHTML;
             });
@@ -91,13 +88,13 @@ const options = {
                 torrent_download = "https://www3.yggtorrent.re/engine/download_torrent?id="+id;
                 torrent_page = "https://www3.yggtorrent.re/torrent/-/-/"+id+"--";
                 // local_torrent = `./torrents/${id}.torrent`;
-                if (download == 0 && seeds < 2 && peers <= 3 && size.includes("Go")){
+                if (download == 0 && seeds < 2 && peers < 3 && size.includes("Go")){
                     size = parseInt(size.split('Go')[0]);
                     if (size >= taille_minimum && size <= taille_maximum) {
                         // console.log(`url: ${url}\nid: ${id}\ntime: ${time}\nsize: ${size}\ndownload: ${download}\nseeds: ${seeds}\npeers: ${peers}\n`);
 
-                        await page.goto(torrent_page, {waitUntil: 'load', timeout: 13*1000});
-                        await page.addStyleTag({content: 'body {zoom: 0.80;}'})
+                        await page.waitForTimeout(3000);
+                        await page.goto(torrent_page, {waitUntil: 'networkidle2', timeout: 13*1000});
                         await page.waitForSelector('a.butt:nth-child(1)');
                         await page.click('a.butt:nth-child(1)');
                         await page.waitForTimeout(3000);
@@ -108,16 +105,16 @@ const options = {
                     }
                 }
             }
+            await page.goto(search_url, {waitUntil: 'load'});
+            await page.addStyleTag({content: 'body {zoom: 0.75;}'})
             await page.waitForTimeout(60000);
         }
         catch(e) {
             console.log(e);
         }
-
     }
     await browser.close();
-})
-();
+};
 
 function complete(commands) {
     return function (str) {
@@ -129,4 +126,6 @@ function complete(commands) {
       }
       return ret;
     };
-  };
+};
+
+run();
