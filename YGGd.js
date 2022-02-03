@@ -20,7 +20,7 @@ let taille_maximum = 2; // En giga octets
 
 console.log("");
 
-var user_data = "./user_data";
+var user_data = "user_data";
 if (!fs.existsSync(user_data)){
     fs.mkdirSync(user_data);
 }
@@ -32,7 +32,7 @@ if (!fs.existsSync(torrents_dir)){
 const options = {
     // args: [`--window-size=${1920},${1080}`],
     ignoreHTTPSErrors: false,
-    userDataDir: user_data,
+    userDataDir: path.resolve(__dirname, user_data),
     headless: false,
     defaultViewport: null,
 };
