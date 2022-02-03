@@ -2,6 +2,7 @@ const proc = require('child_process');
 const fs = require('fs');
 const https = require('https');
 const puppeteer = require('puppeteer-extra');
+const path = require('path');
 const prompt = require("prompt-sync")({ 
     autocomplete: complete(['bob','kevina']),
     sigint: true 
@@ -14,8 +15,8 @@ puppeteer.use(StealthPlugin());
 
 let ygg_user = prompt("YGG username: ");
 let ygg_pass = prompt("YGG password: ", {echo: ''});
-let taille_minimum = 13; // En giga octets
-let taille_maximum = 42; // En giga octets
+let taille_minimum = 0.1; // En giga octets
+let taille_maximum = 2; // En giga octets
 
 console.log("");
 
@@ -23,7 +24,7 @@ var user_data = "./user_data";
 if (!fs.existsSync(user_data)){
     fs.mkdirSync(user_data);
 }
-var torrents_dir = "./torrents";
+var torrents_dir = "torrents";
 if (!fs.existsSync(torrents_dir)){
     fs.mkdirSync(torrents_dir);
 }
@@ -45,7 +46,7 @@ async function run () {
     await page.setCacheEnabled(false);
     await page._client.send('Network.setCacheDisabled', { cacheDisabled: true });
     
-    await page._client.send('Page.setDownloadBehavior', {behavior: 'allow', downloadPath: torrents_dir});
+    await page._client.send('Page.setDownloadBehavior', {behavior: 'allow', downloadPath: path.resolve(__dirname, torrents_dir)});
     await page.goto('https://www3.yggtorrent.re/', {waitUntil: 'networkidle2'});
     await page.addStyleTag({content: 'body {zoom: 0.75;}'})
 
@@ -63,7 +64,7 @@ async function run () {
                     await page.click('button > i.ico_unlock');
                 }
                 catch(e) {
-                    console.log("Can not login:" + e);
+                    // console.log("Can not login");
                 }
             }
             let search_url = "https://www3.yggtorrent.re/engine/search?name=&do=search";
@@ -89,7 +90,7 @@ async function run () {
                 torrent_page = "https://www3.yggtorrent.re/torrent/-/-/"+id+"--";
                 // local_torrent = `./torrents/${id}.torrent`;
                 if (download == 0 && seeds < 2 && peers < 3 && size.includes("Go")){
-                    size = parseInt(size.split('Go')[0]);
+                    size = parseFloat(size.split('Go')[0]);
                     if (size >= taille_minimum && size <= taille_maximum) {
                         // console.log(`url: ${url}\nid: ${id}\ntime: ${time}\nsize: ${size}\ndownload: ${download}\nseeds: ${seeds}\npeers: ${peers}\n`);
 
@@ -110,7 +111,7 @@ async function run () {
             await page.waitForTimeout(60000);
         }
         catch(e) {
-            console.log(e);
+            // console.log(e);
         }
     }
     await browser.close();
