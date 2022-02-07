@@ -3,6 +3,7 @@ const fs = require('fs');
 const https = require('https');
 const puppeteer = require('puppeteer-extra');
 const path = require('path');
+const fetch = require('node-fetch');
 const prompt = require("prompt-sync")({
     autocomplete: complete(['kevin','kevina']),
     sigint: true
@@ -16,14 +17,16 @@ puppeteer.use(StealthPlugin());
 
 let ygg_user = prompt("YGG username: ");
 let ygg_pass = prompt("YGG password: ", {echo: ''});
-let age_max = 15; // en minutes
+let age_max = 5; // minutes
 let seed_max = 1;
 let peer_max = 2;
-let taille_minimum = 7;
-let taille_maximum = 42;
+let taille_minimum = 13; // gigaoctets
+let taille_maximum = 69; // gigaoctets
+let refresh_delay = 30; // secondes
+let search_url = "https://www3.yggtorrent.re/top/day";
+
 taille_minimum = ((taille_minimum * 1024) * 1024) * 1024; // En giga octets
 taille_maximum = ((taille_maximum * 1024) * 1024) * 1024; // En giga octets
-console.log("");
 
 var user_data = "user_data";
 if (!fs.existsSync(user_data)){
@@ -43,24 +46,64 @@ const options = {
 };
 
 async function run () {
-    console.log("        -= YGG B0T =-\n");
-    console.log("♪┏(・o･)┛♪┗ ( ･o･) ┓♪┏(・o･)┛\n");
+    const response = await fetch('https://ip4.seeip.org');
+    const ip = await response.text();
+    console.log(`\n-=| YGG B0T [${ip}] |=-\n`);
     const browser = await puppeteer.launch(options);
     const [page] = await browser.pages();
-    await page.setDefaultTimeout(90*1000);
+    await page.setDefaultTimeout((refresh_delay * 2) * 1000);
     await page.setCacheEnabled(false);
     await page._client.send('Network.setCacheDisabled', { cacheDisabled: true });
-
     await page._client.send('Page.setDownloadBehavior', {behavior: 'allow', downloadPath: path.resolve(__dirname, torrents_dir)});
-    await page.goto('https://www3.yggtorrent.re/', {waitUntil: 'load'});
-    await page.waitForTimeout(3 * 1000);
-    await page.addStyleTag({content: 'body {zoom: 0.75;}'})
+
+    // await page.setRequestInterception(true);
+    // page.on('request', (req) => {
+    // if(req.resourceType() === 'image'){
+    //     req.abort(); // stop image
+    // }
+    // else {
+    //     req.continue();
+    // }
+    // });
 
     while (true) {
         try {
-            const messageSelector = "div.ct:nth-child(2) > ul:nth-child(1) > li:nth-child(6)";
-            if (await page.$(messageSelector) == null) {
+            let now = new Date();
+            await page.goto(search_url, {waitUntil: 'networkidle2'});
+            // await page.addStyleTag({content: 'body {zoom: 0.75;}'})
+            await page.waitForSelector('#cat > div > strong');
+            await page.setDefaultTimeout(3 * 1000);
 
+            // ferme la sidebar
+            messageSelector = "#cat.active > div > span";
+            if (await page.$(messageSelector) != null) {
+                // ferme le popup pour les don
+                try {
+                    await page.waitForSelector('.open > strong:nth-child(2)');
+                    await page.click('.ico_chevron-left');
+                    console.log('sidebar click');
+                }
+                catch(e) {
+                    console.log(`[sidebar] ${e.name}+ " = " + ${e.message}`);
+                }
+            }
+
+            messageSelector = "#over-18-notification > div.ad-alert-message-text > div > button";
+            if (await page.$(messageSelector) != null) {
+                // ferme le popup pour les don
+                try {
+                    await page.waitForSelector('#over-18-notification > div.ad-alert-message-text > div');
+                    await page.click('#over-18-notification > div.ad-alert-message-text > div > button');
+                    console.log('popup click');
+                }
+                catch(e) {
+                    console.log(`[popup] ${e.name}+ " = " + ${e.message}`);
+                }
+            }
+
+            messageSelector = "div.ct:nth-child(2) > ul:nth-child(1) > li:nth-child(6)";
+            if (await page.$(messageSelector) == null) {
+                // se connecte
                 try {
                     await page.waitForSelector('a#register');
                     await page.click('a#register');
@@ -70,24 +113,19 @@ async function run () {
                     await page.click('button > i.ico_unlock');
                 }
                 catch(e) {
-                    // console.log("Can not login");
+                    // console.log("Can not login:",e);
                 }
             }
-            let search_url = "https://www3.yggtorrent.re/top/day";
 
-            await page.goto(search_url, {waitUntil: 'networkidle0'});
-            await page.waitForSelector('#cat > div');
-            await page.click('#cat > div');
-            await page.addStyleTag({content: 'body {zoom: 0.75;}'})
+            await page.setDefaultTimeout((refresh_delay * 2) * 1000);
 
             const html = await page.evaluate(() => {
                 return document.documentElement.innerHTML;
             });
             const regexp = /<tr(?:[^>]+>){10}<a href="(https:\/\/\w+.yggtorrent[^"]+)"(?:[^"]+")(\d+)(?:[^"]*"){10}>(\d+)(?:[^>]+>){4}(\d+)(?:[^>]+>){3}(\d+)<\/td><td>(\d+)<\/td><td>(\d+)<\/td><\/tr>/gm;
             const result = [...html.matchAll(regexp)];
-            let now = new Date();
-            console.log();
-            console.log(`> ${result.length} torrents listés - ${now.toLocaleString("fr-FR")}`);
+            
+            console.log(`\t${now.toLocaleString("fr-FR")}: ${result.length} torrents listés`);
             for(let index =0;index<result.length;++index) {
 
                 url = result[index][1];
@@ -98,6 +136,7 @@ async function run () {
                 timeDiff /= 1000;
                 timeDiff = Math.round(timeDiff / 60);
                 size = result[index][4];
+                size_go = Math.round(((size / 1024) / 1024) / 1024);
                 download = result[index][5];
                 seeds = result[index][6];
                 peers = result[index][7];
@@ -108,22 +147,19 @@ async function run () {
 
                 // local_torrent = `./torrents/${id}.torrent`;
                 if (download == 0 && seeds <= seed_max && peers <= peer_max && size >= taille_minimum && size <= taille_maximum && timeDiff < age_max){
-                        console.log(`url: ${url}\nid: ${id}\nage: ${timeDiff} minutes\nsize: ${size}\ntaile (go): ${((size / 1024) / 1024) / 1024}\ndownload: ${download}\nseeds: ${seeds}\npeers: ${peers}\n`);
+                        console.log(`url: ${url}\nid: ${id}\nage: ${timeDiff} minutes\nsize (octets): ${size}\ntaile (Go): ${size_go}\ndownload: ${download}\nseeds: ${seeds}\npeers: ${peers}\n`);
 
-                        await page.waitForTimeout(3 *1000);
-                        await page.goto(torrent_page, {waitUntil: 'networkidle2', timeout: 13*1000});
+                        await page.waitForTimeout(2 *1000);
+                        await page.goto(torrent_page, {waitUntil: 'networkidle0'});
                         await page.waitForSelector('a.butt:nth-child(1)');
                         await page.click('a.butt:nth-child(1)');
                 }
             }
-            await page.goto(search_url, {waitUntil: 'networkidle0'});
-            await page.waitForSelector('#cat > div');
-            await page.click('#cat > div');
-            await page.addStyleTag({content: 'body {zoom: 0.75;}'})
-            await page.waitForTimeout(30 * 1000);
+
+            await page.waitForTimeout(refresh_delay * 1000);
         }
         catch(e) {
-            // console.log(e);
+            console.log(`\t${now.toLocaleString("fr-FR")}: ${e.name}+ " = " + ${e.message}`);
         }
     }
     await browser.close();
