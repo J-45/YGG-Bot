@@ -126,7 +126,8 @@ async function run () {
                 return document.documentElement.innerHTML;
             });
             const regexp = /<tr(?:[^>]+>){10}<a href="(https:\/\/\w+.yggtorrent[^"]+)"(?:[^"]+")(\d+)(?:[^"]*"){10}>(\d+)(?:[^>]+>){4}(\d+)(?:[^>]+>){3}(\d+)<\/td><td>(\d+)<\/td><td>(\d+)<\/td><\/tr>/gm;
-            if (cat != ""){
+                html = html.toString().split('<h2 class="margin" style="letter-spacing: 0px;">Torrents de <strong style="color : #7bd8bf">'+cat)[1];
+            if (typeof html !== "undefined" && cat != ""){
                 html = html.toString().split('<h2 class="margin" style="letter-spacing: 0px;">Torrents de <strong style="color : #7bd8bf">'+cat)[1];
                 html = html.toString().split('<h2 class="margin" style="letter-spacing: 0px;">Torrents de')[0];
             }
