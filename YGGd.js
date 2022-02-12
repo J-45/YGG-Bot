@@ -11,6 +11,7 @@ const prompt = require("prompt-sync")({
     autocomplete: complete(['kevin','kevina']),
     sigint: true
 });
+
 // puppeteer.use(require('puppeteer-extra-plugin-font-size')({defaultFontSize: 11}))
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const { exit } = require('process');
@@ -18,47 +19,45 @@ const { exit } = require('process');
 // https://www.scrapingbee.com/blog/download-file-puppeteer/
 puppeteer.use(StealthPlugin());
 
-let ygg_user = prompt("YGG username: ");
-let ygg_pass = prompt("YGG password: ", {echo: ''});
-let age_max = 5; // minutes
-let peer_min = 2;
-let cat = 'XXX';
-let taille_minimum = 7; // gigaoctets
-let taille_maximum = 69; // gigaoctets
-let refresh_delay = 30; // secondes
-let search_url = "https://www3.yggtorrent.re/top/day";
+let YGG_USER = prompt("YGG username: ");
+let YGG_PASS = prompt("YGG password: ", {echo: ''});
+let AGE_MAX = 5; // minutes
+let CAT = 'XXX';
+let TAILLE_MINIMUM = 7; // gigaoctets
+let TAILLE_MAXIMUM = 69; // gigaoctets
+let REFRESH_DELAY = 30; // secondes
+let SEARCH_URL = "https://www3.yggtorrent.re/top/day";
 
-taille_minimum = ((taille_minimum * 1024) * 1024) * 1024; // En giga octets
-taille_maximum = ((taille_maximum * 1024) * 1024) * 1024; // En giga octets
+TAILLE_MINIMUM = ((TAILLE_MINIMUM * 1024) * 1024) * 1024; // En giga octets
+TAILLE_MAXIMUM = ((TAILLE_MAXIMUM * 1024) * 1024) * 1024; // En giga octets
 
-var user_data = "user_data";
-if (!fs.existsSync(user_data)){
-    fs.mkdirSync(user_data);
+var USER_DATA = "USER_DATA";
+if (!fs.existsSync(USER_DATA)){
+    fs.mkdirSync(USER_DATA);
 }
-var torrents_dir = "torrents";
-if (!fs.existsSync(torrents_dir)){
-    fs.mkdirSync(torrents_dir);
+var TORRENTS_DIR = "torrents";
+if (!fs.existsSync(TORRENTS_DIR)){
+    fs.mkdirSync(TORRENTS_DIR);
 }
 
 const options = {
     // args: [`--window-size=${1920},${1080}`],
     ignoreHTTPSErrors: false,
-    userDataDir: path.resolve(__dirname, user_data),
+    userDataDir: path.resolve(__dirname, USER_DATA),
     headless: false,
     defaultViewport: null,
 };
 
 async function run () {
-    const response = await fetch('https://j45.eu/ip');
-    const body = await response.text();
-    const ip = body.split('= ')[1].slice(0, -5);
+    const response = await fetch('https://ip4.seeip.org');
+    const ip = await response.text();
     console.log(`\n-=| YGG B0T [${ip}] |=-\n`);
     const browser = await puppeteer.launch(options);
     const [page] = await browser.pages();
-    await page.setDefaultTimeout((refresh_delay * 2) * 1000);
+    await page.setDefaultTimeout((REFRESH_DELAY * 2) * 1000);
     await page.setCacheEnabled(false);
     await page._client.send('Network.setCacheDisabled', { cacheDisabled: true });
-    await page._client.send('Page.setDownloadBehavior', {behavior: 'allow', downloadPath: path.resolve(__dirname, torrents_dir)});
+    await page._client.send('Page.setDownloadBehavior', {behavior: 'allow', downloadPath: path.resolve(__dirname, TORRENTS_DIR)});
 
     // await page.setRequestInterception(true);
     // page.on('request', (req) => {
@@ -72,7 +71,7 @@ async function run () {
 
     while (true) {
         try {
-            await page.goto(search_url, {waitUntil: 'networkidle2'});
+            await page.goto(SEARCH_URL, {waitUntil: 'networkidle2'});
             // await page.addStyleTag({content: 'body {zoom: 0.75;}'})
             await page.waitForSelector('#cat > div > strong');
             await page.setDefaultTimeout(3 * 1000);
@@ -91,12 +90,12 @@ async function run () {
                 }
             }
 
-            messageSelector = "#over-18-notification > div.ad-alert-message-text > div > button";
+            messageSelector = "#over-18-notifiCATion > div.ad-alert-message-text > div > button";
             if (await page.$(messageSelector) != null) {
                 // ferme le popup pour les don
                 try {
-                    await page.waitForSelector('#over-18-notification > div.ad-alert-message-text > div');
-                    await page.click('#over-18-notification > div.ad-alert-message-text > div > button');
+                    await page.waitForSelector('#over-18-notifiCATion > div.ad-alert-message-text > div');
+                    await page.click('#over-18-notifiCATion > div.ad-alert-message-text > div > button');
                     console.log('popup click');
                 }
                 catch(e) {
@@ -111,8 +110,8 @@ async function run () {
                     await page.waitForSelector('a#register');
                     await page.click('a#register');
                     await page.waitForSelector('button > i.ico_unlock');
-                    await page.type('input[name=id]', ygg_user);
-                    await page.type('input[name=pass]', ygg_pass);
+                    await page.type('input[name=id]', YGG_USER);
+                    await page.type('input[name=pass]', YGG_PASS);
                     await page.click('button > i.ico_unlock');
                 }
                 catch(e) {
@@ -120,50 +119,51 @@ async function run () {
                 }
             }
 
-            await page.setDefaultTimeout((refresh_delay * 2) * 1000);
-
-            let html = await page.evaluate(() => {
+            await page.setDefaultTimeout((REFRESH_DELAY * 2) * 1000);
+            let html = "";
+            html = await page.evaluate(() => {
                 return document.documentElement.innerHTML;
             });
             const regexp = /<tr(?:[^>]+>){10}<a href="(https:\/\/\w+.yggtorrent[^"]+)"(?:[^"]+")(\d+)(?:[^"]*"){10}>(\d+)(?:[^>]+>){4}(\d+)(?:[^>]+>){3}(\d+)<\/td><td>(\d+)<\/td><td>(\d+)<\/td><\/tr>/gm;
-                html = html.toString().split('<h2 class="margin" style="letter-spacing: 0px;">Torrents de <strong style="color : #7bd8bf">'+cat)[1];
-            if (typeof html !== "undefined" && cat != ""){
-                html = html.toString().split('<h2 class="margin" style="letter-spacing: 0px;">Torrents de <strong style="color : #7bd8bf">'+cat)[1];
-                html = html.toString().split('<h2 class="margin" style="letter-spacing: 0px;">Torrents de')[0];
+            if (html !== undefined && CAT != "" && html.includes(CAT))
+            {
+                html = html.split('<h2 class="margin" style="letter-spacing: 0px;">Torrents de <strong style="color : #7bd8bf">'+CAT)[1];
+                html = html.split('<h2 class="margin" style="letter-spacing: 0px;">Torrents de')[0];
             }
+
             const result = [...html.matchAll(regexp)];
             let now = new Date();
             console.log(`${now.toLocaleString("fr-FR")}: ${result.length} torrents listés`);
             for(let index =0;index<result.length;++index) {
 
-                url = result[index][1];
-                id = result[index][2];
-                time = result[index][3] * 1000;
-                endTime = new Date();
-                let timeDiff = endTime - time; //in ms
-                timeDiff /= 1000;
-                timeDiff = Math.round(timeDiff / 60);
-                size = result[index][4];
-                download = result[index][5];
-                seeds = result[index][6];
-                peers = result[index][7];
-                torrent_page = "https://www3.yggtorrent.re/torrent/-/-/"+id+"--";
+                Url = result[index][1];
+                Id = result[index][2];
+                Time = result[index][3] * 1000;
+                EndTime = new Date();
+                let TimeDiff = EndTime - Time; //in ms
+                TimeDiff /= 1000;
+                TimeDiff = Math.round(TimeDiff / 60);
+                Size = result[index][4];
+                Download = result[index][5];
+                Seeds = result[index][6];
+                Peers = result[index][7];
+                Torrent_page = "https://www3.yggtorrent.re/torrent/-/-/"+Id+"--";
 
 
-                // console.log(`url: ${url}\nid: ${id}\nage: ${timeDiff} minutes\nsize: ${size}\ntaile (go): ${((size / 1024) / 1024) / 1024}\ndownload: ${download}\nseeds: ${seeds}\npeers: ${peers}\n`);
+                // console.log(`url: ${Url}\nid: ${Id}\nage: ${TimeDiff} minutes\nsize: ${Size}\ntaile (go): ${((Size / 1024) / 1024) / 1024}\ndownload: ${Download}\nseeds: ${Seeds}\npeers: ${Peers}\n`);
 
                 // local_torrent = `./torrents/${id}.torrent`;
-                if (download == 0 && seeds <= 1 && size >= taille_minimum && size <= taille_maximum && timeDiff < age_max){
-                        console.log(`url: ${url}\nid: ${id}\nage: ${timeDiff} minutes\nsize: ${size}\ntaile (go): ${((size / 1024) / 1024) / 1024}\ndownload: ${download}\nseeds: ${seeds}\npeers: ${peers}\n`);
+                if (Download == 0 && Seeds <= 1 && Size >= TAILLE_MINIMUM && Size <= TAILLE_MAXIMUM && TimeDiff < AGE_MAX){
+                        console.log(`url: ${Url}\nid: ${Id}\nage: ${TimeDiff} minutes\nsize: ${Size}\ntaile (go): ${((Size / 1024) / 1024) / 1024}\ndownload: ${Download}\nseeds: ${Seeds}\npeers: ${Peers}\n`);
 
                         await page.waitForTimeout(2 *1000);
-                        await page.goto(torrent_page, {waitUntil: 'networkidle0'});
+                        await page.goto(Torrent_page, {waitUntil: 'networkidle0'});
                         await page.waitForSelector('a.butt:nth-child(1)');
                         await page.click('a.butt:nth-child(1)');
                 }
             }
 
-            await page.waitForTimeout(refresh_delay * 1000);
+            await page.waitForTimeout(REFRESH_DELAY * 1000);
         }
         catch(e) {
             // console.log(`${e.name}+ " = " + ${e.message}`);
